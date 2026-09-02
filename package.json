@@ -1,0 +1,20 @@
+{
+  "name": "ritikomal-love-next",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "mongoose": "8.5.1",
+    "bcryptjs": "2.4.3",
+    "jsonwebtoken": "9.0.2",
+    "face-api.js": "0.22.2",
+    "cloudinary": "2.5.1"
+  }
+}
