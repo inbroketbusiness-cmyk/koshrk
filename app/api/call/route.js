@@ -4,6 +4,9 @@ import Signal from '@/models/Signal';
 import User from '@/models/User';
 import { getSessionUserId } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+
 // POST /api/call -> { type, payload }  (send a signal to your partner)
 export async function POST(req) {
   await connectDB();

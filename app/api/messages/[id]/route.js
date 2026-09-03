@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/mongodb';
 import Message from '@/models/Message';
 import { getSessionUserId } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+
 // PATCH /api/messages/:id -> { text }  (only your own text messages, mirrors auth.php's ownership check)
 export async function PATCH(req, { params }) {
   await connectDB();
@@ -45,6 +48,10 @@ export async function DELETE(req, { params }) {
   message.text = null;
   message.imagePath = null;
   message.isImage = false;
+  message.voicePath = null;
+  message.isVoice = false;
+  message.reelUrl = null;
+  message.isReel = false;
   await message.save();
 
   return NextResponse.json({ ok: true, message });

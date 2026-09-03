@@ -1,5 +1,54 @@
 # RITIKOMAL LOVE — Next.js + MongoDB version
 
+## What's new in this update
+
+- **Bigger, redesigned chat layout** — the side contacts rail is gone (it's
+  just the two of you), so the chat area is full width. The top bar now
+  shows a bigger profile block (avatar + name + status) right next to the
+  heading, with Call / Video Call / **☰ More** on the right. Tap ☰ to reach
+  Gallery, Quiz, and Settings.
+- **Hero photo carousel** — the old small static banner is now an
+  auto-sliding carousel of your latest 10 shared photos (`app/chat/page.js`,
+  fed by the new `Photo` collection below). Tap a slide to view + download it.
+- **Profile picture zoom** — tap either avatar in the header to see it big
+  in a square view; tap again (or tap the backdrop) to shrink back.
+- **Online/offline with last-seen** — offline now shows "Last seen today,
+  4:45 PM" / "Last seen 2 Sep, 4:45 PM" instead of just a grey dot.
+- **Permanent Gallery (`models/Photo.js`)** — every photo you send is now
+  also saved to a standalone `Photo` collection, decoupled from the chat
+  message. Deleting a chat message (or its message doc) never removes the
+  photo from Gallery or the Hero carousel again.
+- **Quiz feature is now wired up** (`models/Quiz.js` already existed but had
+  no API/UI before) — `/api/quiz`, `/api/quiz/[id]`, `/api/quiz/[id]/attempt`.
+  Make a quiz (question + 4 options + pick the right one, add more questions
+  optionally) and send it; the other person solves it question-by-question,
+  gets a final score (1 point per correct answer), and both of you can see
+  each other's scores on that quiz card.
+- **Voice notes** — record and send voice notes from the composer
+  (`/api/upload-voice`), stored on Cloudinary like photos. Settings →
+  "Voice notes" lists every clip either of you has sent, labeled by name.
+- **Real in-browser camera capture** — the 🤳 button in the composer opens a
+  live camera preview (with a front/back flip) to snap and send a photo,
+  separate from the 📷 button which still opens your device's normal photo
+  picker.
+- **Instagram Reel sharing** — the 🎬 button lets you paste an Instagram
+  Reel/post link; it's sent as a small link-card in chat (opens in a new
+  tab/the Instagram app on tap) — Instagram itself is never opened or
+  embedded inside the app.
+- **Settings additions** — change your PIN (`/api/auth/change-password`),
+  change your own profile photo by uploading a new one or picking any photo
+  from your shared Gallery (`/api/auth/avatar`), and 10 wallpaper themes
+  built from your own gallery photos. Wallpaper choice is now stored
+  server-side (`models/CoupleSettings.js`, `/api/settings/wallpaper`) so
+  picking one updates it for **both** of you, not just your own browser.
+- **Calling improvements** — added a public TURN relay alongside the
+  existing STUN servers (this is usually why a call "wasn't going through"
+  — plain STUN fails on many mobile networks/firewalls); added a
+  best-effort loudspeaker toggle 🔊/🔈 (full device-output switching isn't
+  supported on every browser, but it always updates the on-screen state);
+  and a front/back camera flip button 🔄 during video calls.
+
+
 Converted from the original PHP + MySQL app. Same idea: a private,
 two-person couple chat with text + image messages, online presence, and
 video-call signaling — now on Next.js (App Router) with MongoDB

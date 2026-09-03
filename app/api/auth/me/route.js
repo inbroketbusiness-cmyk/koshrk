@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { getSessionUserId } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+
 const ONLINE_WINDOW_MS = 8000;
 
 function isOnline(user) {
@@ -30,9 +33,15 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
-    me: { id: me._id, username: me.username, avatarPath: me.avatarPath },
+    me: { id: me._id, username: me.username, avatarPath: me.avatarPath, lastSeen: me.lastSeen },
     partner: partner
-      ? { id: partner._id, username: partner.username, avatarPath: partner.avatarPath, online: isOnline(partner) }
+      ? {
+          id: partner._id,
+          username: partner.username,
+          avatarPath: partner.avatarPath,
+          online: isOnline(partner),
+          lastSeen: partner.lastSeen,
+        }
       : null,
   });
 }

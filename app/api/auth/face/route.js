@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { getSessionUserId } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+
 // Attach/replace the logged-in user's face descriptor (Settings -> Face ID).
 export async function POST(req) {
   await connectDB();

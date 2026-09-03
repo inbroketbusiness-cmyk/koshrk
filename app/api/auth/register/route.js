@@ -4,6 +4,9 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { createSessionCookie } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
+
 export async function POST(req) {
   await connectDB();
   const body = await req.json();
