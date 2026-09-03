@@ -24,12 +24,13 @@
 * { box-sizing: border-box; }
 html { height: 100%; }
 
-/* Mobile browsers resize the viewport as the address bar hides/shows, which
-   makes 100vh unreliable (content gets clipped under the URL bar or the
-   on-screen keyboard). Prefer the dynamic viewport unit where supported. */
-body.h-screen { height: 100vh; }
+/* App shell: fixed header + fixed composer, ONLY the message list scrolls.
+   100vh is unreliable on mobile browsers (address bar show/hide resizes the
+   viewport), so prefer the dynamic viewport unit, and keep the shell itself
+   non-scrolling so nothing but #messageList can ever scroll the page. */
+.app-shell { height: 100vh; overflow: hidden; }
 @supports (height: 100dvh) {
-  body.h-screen { height: 100dvh; }
+  .app-shell { height: 100dvh; }
 }
 
 /* Tap targets should be comfortably touchable on mobile (Apple/Google both
@@ -583,6 +584,17 @@ header#topBar {
   .font-display.text-xl { font-size: 1.05rem; }
 }
 
+/* ---- Header: keep the title compact on small phones so the profile
+   name/status next to it always has room and never gets clipped ---- */
+@media (max-width: 420px) {
+  .app-header { padding-left: 0.5rem; padding-right: 0.5rem; gap: 0.5rem; }
+  .app-header-title { font-size: 0.95rem; letter-spacing: -0.01em; }
+  .header-avatar { width: 34px; height: 34px; }
+  .header-name { font-size: 12.5px; }
+  .header-status { font-size: 10px; }
+  .topbar-btn { width: 30px; height: 30px; font-size: 13px; }
+}
+
 /* =========================================================================
    NEW: Header profile, hero carousel, dropdown menu, lightbox, modals,
    voice-note bubble, reel card, avatar zoom.
@@ -692,3 +704,10 @@ header#topBar {
 
 /* ---- Wallpaper photo swatches ------------------------------------------------ */
 .wallpaper-swatch-photo { background-size: cover; background-position: center; }
+
+/* ---- Composer "attach" menu (camera / take photo / reel), opens upward ---- */
+.attach-menu {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 45;
+  min-width: 190px; border-radius: 16px; overflow: hidden;
+  animation: pop-in .16s ease;
+}

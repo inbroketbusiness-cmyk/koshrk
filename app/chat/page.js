@@ -86,6 +86,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const lastIdRef = useRef(null);
+  const sendLockRef = useRef(false);
   const fileInputRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -94,6 +95,7 @@ export default function ChatPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [faceMsg, setFaceMsg] = useState('');
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [avatarZoom, setAvatarZoom] = useState(null); // null | 'me' | 'partner'
   const [lightboxImg, setLightboxImg] = useState(null);
 
@@ -102,41 +104,22 @@ export default function ChatPage() {
   const [editText, setEditText] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
 
-  // ---- Hero carousel (latest 10 photos, auto-sliding) ----------------------
-  const [heroPhotos, setHeroPhotos] = useState([]);
-  const [heroIndex, setHeroIndex] = useState(0);
-
+  // ---- Gallery photos (used by the Gallery drawer, avatar picker, etc.) ----
   const fetchGallery = useCallback(async () => {
     try {
       const res = await fetch('/api/gallery');
       const data = await res.json();
-      if (data.ok) {
-        setHeroPhotos(data.images.slice(0, 10));
-        if (galleryOpen) setGalleryImages(data.images);
-      }
+      if (data.ok) setGalleryImages(data.images);
     } catch {
       /* next poll retries */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galleryOpen]);
+  }, []);
 
   useEffect(() => {
     fetchGallery();
-    const id = setInterval(fetchGallery, 8000);
+    const id = setInterval(fetchGallery, 10000);
     return () => clearInterval(id);
   }, [fetchGallery]);
-
-  useEffect(() => {
-    if (heroPhotos.length < 2) return;
-    const id = setInterval(() => {
-      setHeroIndex((i) => (i + 1) % heroPhotos.length);
-    }, 3200);
-    return () => clearInterval(id);
-  }, [heroPhotos.length]);
-
-  useEffect(() => {
-    if (heroIndex >= heroPhotos.length) setHeroIndex(0);
-  }, [heroPhotos, heroIndex]);
 
   // ---- Wallpaper (shared between both partners via the server) ------------
   const [wallpaper, setWallpaperState] = useState(null);
@@ -784,18 +767,29 @@ export default function ChatPage() {
 
   async function sendText(e) {
     e.preventDefault();
+    // Synchronous guard: some mobile keyboards fire the Enter/"Go" key twice
+    // in the same tick (once via our onKeyDown handler, once via the
+    // textarea's own submit behaviour). A ref check happens instantly,
+    // before React re-renders, so the second call is blocked even though
+    // both calls started with the same not-yet-cleared `text` value.
+    if (sendLockRef.current) return;
     const trimmed = text.trim();
     if (!trimmed) return;
+    sendLockRef.current = true;
     setText('');
-    const res = await fetch('/api/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: trimmed }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setMessages((prev) => [...prev, data.message]);
-      lastIdRef.current = data.message._id;
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: trimmed }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessages((prev) => [...prev, data.message]);
+        lastIdRef.current = data.message._id;
+      }
+    } finally {
+      sendLockRef.current = false;
     }
   }
 
@@ -892,14 +886,14 @@ export default function ChatPage() {
 
   return (
     <div
-      className="h-screen overflow-hidden flex flex-col"
+      className="app-shell flex flex-col"
       style={{ background: 'var(--bg-black)' }}
     >
       <HeartField />
 
       {/* ================= TOP BAR ================= */}
-      <header className="glass flex items-center px-3 sm:px-4 md:px-6 py-2 md:py-2.5 z-30 gap-3">
-        <span className="font-display text-lg sm:text-xl md:text-2xl whitespace-nowrap shrink-0" style={{ color: 'var(--ink)' }}>
+      <header className="app-header glass flex items-center px-3 sm:px-4 md:px-6 py-2 md:py-2.5 z-30 gap-3 shrink-0">
+        <span className="app-header-title font-display text-lg sm:text-xl md:text-2xl whitespace-nowrap shrink-0" style={{ color: 'var(--ink)' }}>
           RITIKOMAL <span style={{ color: 'var(--red-deep)' }}>LOVE</span>
         </span>
 
@@ -910,8 +904,8 @@ export default function ChatPage() {
             <span className={`status-dot ${partner?.online ? 'online' : ''}`} />
           </div>
           <div className="leading-tight text-left min-w-0">
-            <p className="text-sm sm:text-base font-semibold truncate">{partner ? partner.username : 'Waiting for partner…'}</p>
-            <p className="text-[11px] sm:text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
+            <p className="header-name text-sm sm:text-base font-semibold truncate">{partner ? partner.username : 'Waiting for partner…'}</p>
+            <p className="header-status text-[11px] sm:text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
               {!partner ? '—' : partner.online ? 'online' : formatLastSeen(partner.lastSeen) || 'offline'}
             </p>
           </div>
@@ -942,38 +936,12 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* ================= HERO CAROUSEL — latest 10 photos, auto-sliding ================= */}
-      <div className="hero-carousel h-32 sm:h-44 md:h-60 w-full">
-        {heroPhotos.length === 0 ? (
-          <div
-            className="hero-carousel-empty h-full w-full"
-            style={{ backgroundImage: "url('/img/banner.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }}
-          />
-        ) : (
-          <>
-            <div className="hero-carousel-track" style={{ transform: `translateX(-${heroIndex * 100}%)` }}>
-              {heroPhotos.map((img) => (
-                <div key={img._id} className="hero-carousel-slide" onClick={() => setLightboxImg(img.imagePath)}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img.imagePath} alt="" />
-                </div>
-              ))}
-            </div>
-            <div className="hero-dots">
-              {heroPhotos.map((img, i) => (
-                <span key={img._id} className={`hero-dot ${i === heroIndex ? 'active' : ''}`} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
       {/* ================= MAIN — full-width chat, no side rail ================= */}
-      <main className="flex-1 relative overflow-hidden flex">
-        <section className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 min-h-0 relative overflow-hidden flex">
+        <section className="flex-1 min-h-0 flex flex-col min-w-0">
           <div
             id="messageList"
-            className="flex-1 overflow-y-auto px-3 md:px-8 py-5 space-y-3"
+            className="flex-1 min-h-0 overflow-y-auto px-3 md:px-8 py-5 space-y-3"
             style={
               wallpaperUrl
                 ? {
@@ -1100,35 +1068,47 @@ export default function ChatPage() {
           <form
             onSubmit={sendText}
             id="composer"
-            className="glass mx-2 sm:mx-3 md:mx-8 mb-2 sm:mb-3 rounded-2xl p-2 sm:p-2.5 flex items-end gap-1.5 sm:gap-2 relative"
+            className="glass mx-2 sm:mx-3 md:mx-8 mb-2 sm:mb-3 rounded-2xl p-2 sm:p-2.5 flex items-end gap-1.5 sm:gap-2 relative shrink-0"
           >
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Send a photo from gallery"
-              className="w-10 h-10 rounded-full btn-ghost flex items-center justify-center shrink-0"
-            >
-              📷
-            </button>
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setAttachMenuOpen((o) => !o)}
+                title="Photo, camera or reel"
+                className="w-10 h-10 rounded-full btn-ghost flex items-center justify-center"
+              >
+                ⋯
+              </button>
+              {attachMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setAttachMenuOpen(false)} />
+                  <div className="glass attach-menu">
+                    <button
+                      type="button"
+                      className="more-menu-item"
+                      onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click(); }}
+                    >
+                      📷 Photo from gallery
+                    </button>
+                    <button
+                      type="button"
+                      className="more-menu-item"
+                      onClick={() => { setAttachMenuOpen(false); openCamera(); }}
+                    >
+                      🤳 Take a photo
+                    </button>
+                    <button
+                      type="button"
+                      className="more-menu-item"
+                      onClick={() => { setAttachMenuOpen(false); setReelModalOpen(true); }}
+                    >
+                      🎬 Share a Reel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={sendImage} />
-
-            <button
-              type="button"
-              onClick={openCamera}
-              title="Take a photo"
-              className="w-10 h-10 rounded-full btn-ghost flex items-center justify-center shrink-0"
-            >
-              🤳
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setReelModalOpen(true)}
-              title="Share an Instagram Reel"
-              className="w-10 h-10 rounded-full btn-ghost flex items-center justify-center shrink-0"
-            >
-              🎬
-            </button>
 
             <textarea
               rows={1}
