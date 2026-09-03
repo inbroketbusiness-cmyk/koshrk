@@ -677,6 +677,48 @@ export default function ChatPage() {
   const [speakerOn, setSpeakerOn] = useState(true);
   const [facingMode, setFacingMode] = useState('user');
 
+  // Auto-hide call controls during a connected video call (like WhatsApp/
+  // Instagram) so the icons don't sit on top of the video the whole time —
+  // they fade out after a few seconds and a tap brings them back.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsHideTimerRef = useRef(null);
+
+  const clearControlsHideTimer = useCallback(() => {
+    if (controlsHideTimerRef.current) {
+      clearTimeout(controlsHideTimerRef.current);
+      controlsHideTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleControlsHide = useCallback(() => {
+    clearControlsHideTimer();
+    controlsHideTimerRef.current = setTimeout(() => setControlsVisible(false), 3500);
+  }, [clearControlsHideTimer]);
+
+  // Tap anywhere on the call screen to toggle the icons — tap to hide them
+  // out of the way of the video, tap again to bring them back (which then
+  // auto-hides again after a few seconds).
+  const handleCallScreenTap = useCallback(() => {
+    if (callType !== 'video' || callState !== 'connected') return;
+    setControlsVisible((v) => {
+      const next = !v;
+      if (next) scheduleControlsHide();
+      else clearControlsHideTimer();
+      return next;
+    });
+  }, [callType, callState, scheduleControlsHide, clearControlsHideTimer]);
+
+  useEffect(() => {
+    if (callType === 'video' && callState === 'connected') {
+      setControlsVisible(true);
+      scheduleControlsHide();
+    } else {
+      clearControlsHideTimer();
+      setControlsVisible(true);
+    }
+    return clearControlsHideTimer;
+  }, [callType, callState, scheduleControlsHide, clearControlsHideTimer]);
+
   useEffect(() => {
     callStateRef.current = callState;
   }, [callState]);
@@ -767,6 +809,8 @@ export default function ChatPage() {
     stopRing();
     callLockRef.current = false;
     stopTimer();
+    if (controlsHideTimerRef.current) { clearTimeout(controlsHideTimerRef.current); controlsHideTimerRef.current = null; }
+    setControlsVisible(true);
     setCallState('idle');
     setMuted(false);
     setCameraOff(false);
@@ -1065,11 +1109,24 @@ export default function ChatPage() {
     }
   }
 
+  const MAX_GALLERY_SELECT = 30;
+
   async function sendImage(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadImageBlob(file);
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
+    if (!files.length) return;
+
+    let toSend = files;
+    if (toSend.length > MAX_GALLERY_SELECT) {
+      alert(`Ek baar me max ${MAX_GALLERY_SELECT} photos select kar sakte ho. Pehli ${MAX_GALLERY_SELECT} bhej rahe hain.`);
+      toSend = toSend.slice(0, MAX_GALLERY_SELECT);
+    }
+
+    // Send one-by-one so each appears in order as it finishes uploading,
+    // instead of firing 30 uploads at once.
+    for (const file of toSend) {
+      await uploadImageBlob(file);
+    }
   }
 
   async function saveEdit(id) {
@@ -1380,7 +1437,7 @@ export default function ChatPage() {
                 </>
               )}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={sendImage} />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={sendImage} />
 
             <textarea
               rows={1}
@@ -1751,7 +1808,11 @@ export default function ChatPage() {
 
       {/* ================= CALL OVERLAY ================= */}
       {showCallOverlay && (
-        <div id="callOverlay" className="fixed inset-0 z-50 flex flex-col items-center justify-center">
+        <div
+          id="callOverlay"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          onClick={handleCallScreenTap}
+        >
           {callType === 'video' && (
             <video
               ref={remoteVideoRef}
@@ -1789,7 +1850,19 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div className="relative z-10 mt-10 flex items-center gap-5">
+          {/* During a connected video call these fade out after a few
+              seconds so they stop covering the video — tap the screen to
+              bring them back. Every other call state (incoming/outgoing/
+              audio) keeps them always on. */}
+          <div
+            className="relative z-10 mt-10 flex items-center gap-5"
+            style={{
+              opacity: controlsVisible ? 1 : 0,
+              pointerEvents: controlsVisible ? 'auto' : 'none',
+              transition: 'opacity .25s ease',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {callState === 'incoming' ? (
               <>
                 <button onClick={declineCall} className="call-control-btn end" title="Decline">✕</button>
