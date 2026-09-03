@@ -9,32 +9,216 @@ const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   // Public relay so calls still connect across strict mobile-data / office
-  // NATs where plain STUN fails (this is what was causing calls to not go
-  // through before). It's a free demo relay — fine for two people, but if
-  // it ever gets flaky, swap in your own TURN server here.
+  // NATs where plain STUN fails. This is a free, shared demo relay — it can
+  // get rate-limited under load, which shows up as calls that connect then
+  // drop or never connect on some networks. For rock-solid reliability, set
+  // NEXT_PUBLIC_TURN_URL / _USERNAME / _CREDENTIAL in .env.local to your own
+  // TURN server (e.g. a free Metered.ca account, Twilio NTS, or Cloudflare
+  // Calls) — see .env.local.example. It'll be added on top of the demo one.
   { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
   { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  ...(process.env.NEXT_PUBLIC_TURN_URL
+    ? [{
+        urls: process.env.NEXT_PUBLIC_TURN_URL,
+        username: process.env.NEXT_PUBLIC_TURN_USERNAME,
+        credential: process.env.NEXT_PUBLIC_TURN_CREDENTIAL,
+      }]
+    : []),
 ];
 
-// 10 of your own gallery photos, used as couple-wallpaper choices. Picking
-// one calls /api/settings/wallpaper, so both of you always see the same
-// wallpaper — not just saved to one phone's browser.
-const WALLPAPERS = [
-  { id: 'w1', file: '/img/gallery/g06_couple_mall.jpg', label: 'Mall Day' },
-  { id: 'w2', file: '/img/gallery/g07_couple_road.jpg', label: 'Road Trip' },
-  { id: 'w3', file: '/img/gallery/g12_couple_stairs.jpg', label: 'Stairway' },
-  { id: 'w4', file: '/img/gallery/g15_couple_temple1.jpg', label: 'Temple' },
-  { id: 'w5', file: '/img/gallery/g16_couple_tree.jpg', label: 'Under the Tree' },
-  { id: 'w6', file: '/img/gallery/g18_couple_temple2.jpg', label: 'Temple II' },
-  { id: 'w7', file: '/img/gallery/g01_diya.jpg', label: 'Diya Glow' },
-  { id: 'w8', file: '/img/gallery/g09_saree.jpg', label: 'Saree Day' },
-  { id: 'w9', file: '/img/gallery/g11_cake.jpg', label: 'Cake Time' },
-  { id: 'w10', file: '/img/gallery/g14_temple_bag.jpg', label: 'Together' },
-];
-function wallpaperFile(id) {
-  return WALLPAPERS.find((w) => w.id === id)?.file || null;
+// 10 original wallpaper designs — pure SVG (no photo files), so they're tiny,
+// crisp on every screen size, and there's zero copyright risk since these
+// are simple hand-authored gradients/motifs, not sourced from the web.
+// Includes a couple of Radha-Krishna themed ones (peacock feather, lotus +
+// diya) as requested.
+function svgWallpaper(inner) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">${inner}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
+
+const WALLPAPERS = [
+  {
+    id: 'w1',
+    label: 'Gulabi Shaam',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#3b0a1a"/><stop offset="55%" stop-color="#c9184a"/><stop offset="100%" stop-color="#ff8fa3"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <circle cx="60" cy="90" r="18" fill="#fff" opacity="0.08"/>
+      <circle cx="220" cy="160" r="26" fill="#fff" opacity="0.07"/>
+      <circle cx="120" cy="280" r="14" fill="#fff" opacity="0.09"/>
+      <path d="M150 220 C130 195 90 205 90 235 C90 260 150 300 150 300 C150 300 210 260 210 235 C210 205 170 195 150 220 Z" fill="#fff" opacity="0.10"/>
+    `),
+  },
+  {
+    id: 'w2',
+    label: 'Chandni Raat',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#050814"/><stop offset="100%" stop-color="#16213e"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <circle cx="80" cy="90" r="1.4" fill="#fff" opacity="0.8"/>
+      <circle cx="140" cy="60" r="1.1" fill="#fff" opacity="0.6"/>
+      <circle cx="220" cy="120" r="1.6" fill="#fff" opacity="0.7"/>
+      <circle cx="250" cy="70" r="1.2" fill="#fff" opacity="0.5"/>
+      <circle cx="40" cy="180" r="1.3" fill="#fff" opacity="0.6"/>
+      <circle cx="190" cy="220" r="1.1" fill="#fff" opacity="0.5"/>
+      <circle cx="70" cy="260" r="1.4" fill="#fff" opacity="0.7"/>
+      <circle cx="220" cy="60" r="26" fill="#f3e9ea" opacity="0.85"/>
+      <circle cx="232" cy="52" r="24" fill="#16213e"/>
+    `),
+  },
+  {
+    id: 'w3',
+    label: 'Sunhera Sunset',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#5c1a1a"/><stop offset="55%" stop-color="#e07a3e"/><stop offset="100%" stop-color="#ffd166"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <circle cx="150" cy="230" r="55" fill="#fff3d0" opacity="0.5"/>
+      <rect y="270" width="300" height="2" fill="#fff" opacity="0.25"/>
+      <path d="M0 400 L300 400 L300 340 Q150 300 0 340 Z" fill="#2b0f0f" opacity="0.35"/>
+    `),
+  },
+  {
+    id: 'w4',
+    label: 'Mehendi Hari',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0b3d2e"/><stop offset="100%" stop-color="#3a5a40"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <path d="M40 60 Q90 40 90 90 Q90 130 50 130 Q90 150 130 110" stroke="#e7b65a" stroke-width="2.5" fill="none" opacity="0.35"/>
+      <path d="M260 300 Q210 280 210 330 Q210 370 250 370 Q210 390 170 350" stroke="#e7b65a" stroke-width="2.5" fill="none" opacity="0.35"/>
+      <circle cx="150" cy="210" r="3" fill="#e7b65a" opacity="0.4"/>
+      <circle cx="190" cy="150" r="2" fill="#e7b65a" opacity="0.4"/>
+    `),
+  },
+  {
+    id: 'w5',
+    label: 'Radha Krishna',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0a1e4d"/><stop offset="100%" stop-color="#2b3a67"/>
+      </linearGradient>
+      <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2ec4b6"/><stop offset="100%" stop-color="#0a1e4d"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <!-- peacock feather -->
+      <g transform="translate(150,150) rotate(-8)">
+        <path d="M0 -130 C40 -80 40 40 0 100 C-40 40 -40 -80 0 -130 Z" fill="url(#f)" opacity="0.55"/>
+        <ellipse cx="0" cy="-20" rx="16" ry="26" fill="#e7b65a" opacity="0.8"/>
+        <ellipse cx="0" cy="-20" rx="8" ry="14" fill="#0a1e4d"/>
+        <line x1="0" y1="100" x2="0" y2="180" stroke="#e7b65a" stroke-width="3" opacity="0.6"/>
+      </g>
+      <!-- flute -->
+      <g transform="translate(90,290) rotate(-18)">
+        <rect x="0" y="0" width="150" height="10" rx="5" fill="#e7b65a" opacity="0.7"/>
+        <circle cx="30" cy="5" r="2" fill="#0a1e4d"/>
+        <circle cx="55" cy="5" r="2" fill="#0a1e4d"/>
+        <circle cx="80" cy="5" r="2" fill="#0a1e4d"/>
+        <circle cx="105" cy="5" r="2" fill="#0a1e4d"/>
+      </g>
+    `),
+  },
+  {
+    id: 'w6',
+    label: 'Radha Rani',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4a0e1f"/><stop offset="100%" stop-color="#7a1130"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <g transform="translate(150,360)" opacity="0.75">
+        <ellipse cx="-40" cy="0" rx="34" ry="16" fill="#e7b65a" opacity="0.5"/>
+        <ellipse cx="40" cy="0" rx="34" ry="16" fill="#e7b65a" opacity="0.5"/>
+        <ellipse cx="0" cy="0" rx="40" ry="20" fill="#e7b65a" opacity="0.7"/>
+        <ellipse cx="-20" cy="-10" rx="26" ry="14" fill="#ffd6a5" opacity="0.6"/>
+        <ellipse cx="20" cy="-10" rx="26" ry="14" fill="#ffd6a5" opacity="0.6"/>
+      </g>
+      <path d="M150 230 C142 200 150 180 150 180 C150 180 158 200 150 230 Z" fill="#ffb703" opacity="0.85"/>
+      <path d="M90 250 C84 228 90 212 90 212 C90 212 96 228 90 250 Z" fill="#ffb703" opacity="0.6"/>
+      <path d="M210 250 C204 228 210 212 210 212 C210 212 216 228 210 250 Z" fill="#ffb703" opacity="0.6"/>
+    `),
+  },
+  {
+    id: 'w7',
+    label: 'Baarish Ka Pyaar',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1c2b33"/><stop offset="100%" stop-color="#4a6670"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <g stroke="#cfe8ef" stroke-width="1.5" opacity="0.28">
+        <line x1="20" y1="0" x2="0" y2="60"/><line x1="80" y1="0" x2="60" y2="60"/>
+        <line x1="140" y1="0" x2="120" y2="60"/><line x1="200" y1="0" x2="180" y2="60"/>
+        <line x1="260" y1="0" x2="240" y2="60"/>
+        <line x1="50" y1="120" x2="30" y2="180"/><line x1="110" y1="140" x2="90" y2="200"/>
+        <line x1="170" y1="120" x2="150" y2="180"/><line x1="230" y1="140" x2="210" y2="200"/>
+        <line x1="40" y1="260" x2="20" y2="320"/><line x1="150" y1="280" x2="130" y2="340"/>
+        <line x1="260" y1="260" x2="240" y2="320"/>
+      </g>
+    `),
+  },
+  {
+    id: 'w8',
+    label: 'Gulmohar Love',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#6a040f"/><stop offset="100%" stop-color="#f3722c"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <g fill="#ffd166" opacity="0.55">
+        <g transform="translate(70,90)"><circle r="10"/><circle cx="14" cy="8" r="10"/><circle cx="-14" cy="8" r="10"/><circle cx="0" cy="18" r="10"/></g>
+        <g transform="translate(230,220)"><circle r="9"/><circle cx="13" cy="7" r="9"/><circle cx="-13" cy="7" r="9"/><circle cx="0" cy="16" r="9"/></g>
+        <g transform="translate(90,320)"><circle r="8"/><circle cx="11" cy="6" r="8"/><circle cx="-11" cy="6" r="8"/><circle cx="0" cy="14" r="8"/></g>
+      </g>
+    `),
+  },
+  {
+    id: 'w9',
+    label: 'Taaron Bhari Raat',
+    css: svgWallpaper(`
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#03045e"/><stop offset="100%" stop-color="#023e8a"/>
+      </linearGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <g fill="#fff">
+        <circle cx="40" cy="50" r="1.4" opacity="0.8"/><circle cx="100" cy="30" r="1" opacity="0.6"/>
+        <circle cx="180" cy="70" r="1.6" opacity="0.7"/><circle cx="240" cy="40" r="1.1" opacity="0.5"/>
+        <circle cx="60" cy="160" r="1.3" opacity="0.6"/><circle cx="150" cy="130" r="1" opacity="0.5"/>
+        <circle cx="260" cy="180" r="1.4" opacity="0.7"/><circle cx="30" cy="260" r="1.1" opacity="0.5"/>
+        <circle cx="120" cy="300" r="1.5" opacity="0.7"/><circle cx="220" cy="320" r="1" opacity="0.5"/>
+      </g>
+      <line x1="40" y1="90" x2="110" y2="130" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="112" cy="131" r="2" fill="#fff" opacity="0.8"/>
+    `),
+  },
+  {
+    id: 'w10',
+    label: 'Diya Ki Roshni',
+    css: svgWallpaper(`
+      <defs><radialGradient id="g" cx="50%" cy="35%" r="75%">
+        <stop offset="0%" stop-color="#ffd166"/><stop offset="45%" stop-color="#e07a3e"/><stop offset="100%" stop-color="#3d0000"/>
+      </radialGradient></defs>
+      <rect width="300" height="400" fill="url(#g)"/>
+      <g>
+        <path d="M70 350 C64 328 70 312 70 312 C70 312 76 328 70 350 Z" fill="#ffe066"/>
+        <ellipse cx="70" cy="360" rx="18" ry="8" fill="#7a1130"/>
+        <path d="M150 340 C144 316 150 298 150 298 C150 298 156 316 150 340 Z" fill="#ffe066"/>
+        <ellipse cx="150" cy="352" rx="20" ry="9" fill="#7a1130"/>
+        <path d="M230 350 C224 328 230 312 230 312 C230 312 236 328 230 350 Z" fill="#ffe066"/>
+        <ellipse cx="230" cy="360" rx="18" ry="8" fill="#7a1130"/>
+      </g>
+    `),
+  },
+];
+
 
 const REEL_URL_RE = /^https:\/\/(www\.)?instagram\.com\/(reel|reels|p)\/[A-Za-z0-9_-]+\/?/i;
 
@@ -53,9 +237,9 @@ function formatLastSeen(iso) {
     const d = new Date(iso);
     const sameDay = d.toDateString() === new Date().toDateString();
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (sameDay) return `Last seen today, ${time}`;
+    if (sameDay) return `Last seen ${time}`;
     const date = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
-    return `Last seen ${date}, ${time}`;
+    return `Last seen ${date}`;
   } catch {
     return '';
   }
@@ -150,7 +334,7 @@ export default function ChatPage() {
       /* will resync on next poll */
     }
   }
-  const wallpaperUrl = wallpaper ? wallpaperFile(wallpaper) : null;
+  const wallpaperCss = wallpaper ? WALLPAPERS.find((w) => w.id === wallpaper)?.css : null;
 
   // ---- Quiz -----------------------------------------------------------------
   const [quizOpen, setQuizOpen] = useState(false);
@@ -479,6 +663,10 @@ export default function ChatPage() {
   const incomingOfferRef = useRef(null);
   const callTimerRef = useRef(null);
   const callStateRef = useRef('idle');
+  const callLockRef = useRef(false); // synchronous guard against double-tapping call/accept
+  const failGraceTimerRef = useRef(null); // grace period before hanging up on a flaky connection
+  const ringCtxRef = useRef(null);
+  const ringIntervalRef = useRef(null);
 
   const [callState, setCallState] = useState('idle'); // idle | outgoing | incoming | connected
   const [callType, setCallType] = useState('video'); // 'video' | 'audio'
@@ -503,6 +691,61 @@ export default function ChatPage() {
     callTimerRef.current = setInterval(() => setCallSeconds((s) => s + 1), 1000);
   }, [stopTimer]);
 
+  // Synthetic ring tones (Web Audio oscillator beeps) so there's an audible
+  // cue while dialling or receiving a call — no external sound file needed,
+  // so it always works and never depends on a network fetch.
+  const stopRing = useCallback(() => {
+    if (ringIntervalRef.current) clearInterval(ringIntervalRef.current);
+    ringIntervalRef.current = null;
+    if (ringCtxRef.current) {
+      try { ringCtxRef.current.close(); } catch { /* already closed */ }
+      ringCtxRef.current = null;
+    }
+  }, []);
+
+  function beep(ctx, freq, duration, startTime, gain = 0.09) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(gain, startTime + 0.03);
+    g.gain.linearRampToValueAtTime(0, startTime + duration);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.05);
+  }
+
+  const startRing = useCallback((kind) => {
+    stopRing();
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new Ctx();
+      ringCtxRef.current = ctx;
+      const cycle = () => {
+        if (!ringCtxRef.current) return;
+        if (kind === 'outgoing') {
+          // Classic single long ringback tone.
+          beep(ctx, 425, 1.1, ctx.currentTime, 0.06);
+        } else {
+          // Two short beeps — a clearer "incoming call" alert.
+          beep(ctx, 900, 0.22, ctx.currentTime, 0.11);
+          beep(ctx, 900, 0.22, ctx.currentTime + 0.32, 0.11);
+        }
+      };
+      cycle();
+      ringIntervalRef.current = setInterval(cycle, kind === 'outgoing' ? 3000 : 1500);
+    } catch {
+      /* Web Audio unavailable — call still works, just silently */
+    }
+  }, [stopRing]);
+
+  useEffect(() => {
+    if (callState === 'outgoing') startRing('outgoing');
+    else if (callState === 'incoming') startRing('incoming');
+    else stopRing();
+  }, [callState, startRing, stopRing]);
+
   const cleanupCall = useCallback(() => {
     if (pcRef.current) {
       pcRef.current.onicecandidate = null;
@@ -520,13 +763,16 @@ export default function ChatPage() {
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     pendingCandidatesRef.current = [];
     incomingOfferRef.current = null;
+    if (failGraceTimerRef.current) { clearTimeout(failGraceTimerRef.current); failGraceTimerRef.current = null; }
+    stopRing();
+    callLockRef.current = false;
     stopTimer();
     setCallState('idle');
     setMuted(false);
     setCameraOff(false);
     setCallSeconds(0);
     setFacingMode('user');
-  }, [stopTimer]);
+  }, [stopTimer, stopRing]);
 
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
@@ -539,11 +785,25 @@ export default function ChatPage() {
       if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') {
+      const state = pc.connectionState;
+      if (state === 'connected') {
+        if (failGraceTimerRef.current) { clearTimeout(failGraceTimerRef.current); failGraceTimerRef.current = null; }
+        setCallError('');
         setCallState('connected');
         startTimer();
-      }
-      if (['failed', 'closed'].includes(pc.connectionState)) {
+      } else if (state === 'failed' || state === 'disconnected') {
+        // Mobile networks blip a lot — give it a few seconds to recover on
+        // its own before actually hanging up, instead of cutting instantly.
+        if (!failGraceTimerRef.current) {
+          setCallError(state === 'failed' ? 'Connection weak, reconnecting…' : 'Network blip, hang on…');
+          failGraceTimerRef.current = setTimeout(() => {
+            failGraceTimerRef.current = null;
+            if (pcRef.current && ['failed', 'disconnected'].includes(pcRef.current.connectionState)) {
+              cleanupCall();
+            }
+          }, 6000);
+        }
+      } else if (state === 'closed') {
         cleanupCall();
       }
     };
@@ -562,11 +822,13 @@ export default function ChatPage() {
   }
 
   async function startCall(type) {
+    if (callLockRef.current) return;
     if (!partner) {
       alert('Partner abhi connect nahi hai — unke join karne ka wait karo.');
       return;
     }
     if (callStateRef.current !== 'idle') return;
+    callLockRef.current = true;
     setCallError('');
     setCallType(type);
     setCallState('outgoing');
@@ -585,8 +847,10 @@ export default function ChatPage() {
   }
 
   async function acceptCall() {
+    if (callLockRef.current) return;
     const offer = incomingOfferRef.current;
     if (!offer) return;
+    callLockRef.current = true;
     setCallError('');
     try {
       const type = offer.callType || 'video';
@@ -602,8 +866,11 @@ export default function ChatPage() {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       await sendSignal('answer', { sdp: answer });
-      setCallState('connected');
-      startTimer();
+      // Don't jump straight to "connected" — wait for the real ICE/DTLS
+      // handshake to finish (onconnectionstatechange above handles that).
+      // Jumping the gun here is what made it look like the call "connected"
+      // then instantly cut when the network needed a moment longer.
+      setCallState('connecting');
     } catch (err) {
       setCallError(err.message || 'Call accept nahi ho paayi.');
       declineCall();
@@ -677,8 +944,13 @@ export default function ChatPage() {
       if (!data.ok || !data.signals?.length) return;
       for (const sig of data.signals) {
         if (sig.type === 'offer') {
-          if (pcRef.current || callStateRef.current !== 'idle') {
-            sendSignal('hangup', {});
+          // In a 2-person app your "partner" is always the same one person —
+          // so a stray/duplicate offer that shows up while a call is already
+          // active can only be a stale/late signal from that SAME partner,
+          // never a genuine second caller. Sending 'hangup' here used to go
+          // straight to that partner and instantly kill the real, just-
+          // connected call. Just drop it silently instead.
+          if (callLockRef.current || pcRef.current || callStateRef.current !== 'idle') {
             continue;
           }
           incomingOfferRef.current = { sdp: sig.payload.sdp, callType: sig.payload.callType || 'video' };
@@ -708,7 +980,7 @@ export default function ChatPage() {
   }, [cleanupCall]);
 
   useEffect(() => {
-    const id = setInterval(pollCallSignals, 1500);
+    const id = setInterval(pollCallSignals, 900);
     return () => clearInterval(id);
   }, [pollCallSignals]);
 
@@ -905,7 +1177,7 @@ export default function ChatPage() {
           </div>
           <div className="leading-tight text-left min-w-0">
             <p className="header-name text-sm sm:text-base font-semibold truncate">{partner ? partner.username : 'Waiting for partner…'}</p>
-            <p className="header-status text-[11px] sm:text-xs truncate" style={{ color: 'var(--ink-soft)' }}>
+            <p className="header-status text-[11px] sm:text-xs" style={{ color: 'var(--ink-soft)', whiteSpace: 'normal', wordBreak: 'break-word' }}>
               {!partner ? '—' : partner.online ? 'online' : formatLastSeen(partner.lastSeen) || 'offline'}
             </p>
           </div>
@@ -943,9 +1215,9 @@ export default function ChatPage() {
             id="messageList"
             className="flex-1 min-h-0 overflow-y-auto px-3 md:px-8 py-5 space-y-3"
             style={
-              wallpaperUrl
+              wallpaperCss
                 ? {
-                    backgroundImage: `linear-gradient(rgba(8,7,10,.74), rgba(8,7,10,.74)), url(${wallpaperUrl})`,
+                    backgroundImage: `linear-gradient(rgba(8,7,10,.55), rgba(8,7,10,.55)), ${wallpaperCss}`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'local',
@@ -1357,7 +1629,7 @@ export default function ChatPage() {
                   type="button"
                   title={wp.label}
                   onClick={() => setWallpaper(wp.id)}
-                  style={{ backgroundImage: `url(${wp.file})` }}
+                  style={{ backgroundImage: wp.css }}
                   className={`wallpaper-swatch wallpaper-swatch-photo ${wallpaper === wp.id ? 'selected' : ''}`}
                 />
               ))}
@@ -1496,7 +1768,7 @@ export default function ChatPage() {
               playsInline
               muted
               className="call-local-video"
-              style={{ display: callState === 'outgoing' || callState === 'connected' ? 'block' : 'none' }}
+              style={{ display: ['outgoing', 'connecting', 'connected'].includes(callState) ? 'block' : 'none' }}
             />
           )}
           <audio ref={remoteAudioRef} autoPlay />
@@ -1509,6 +1781,7 @@ export default function ChatPage() {
                 <p className="text-sm mt-1" style={{ color: 'var(--ink-soft)' }}>
                   {callState === 'outgoing' && (callType === 'video' ? 'Video calling…' : 'Calling…')}
                   {callState === 'incoming' && (callType === 'video' ? 'Incoming video call…' : 'Incoming voice call…')}
+                  {callState === 'connecting' && 'Connecting…'}
                   {callState === 'connected' && <span className="call-timer">{formatDuration(callSeconds)}</span>}
                 </p>
                 {callError && <p className="text-xs mt-2" style={{ color: 'var(--red-deep)' }}>{callError}</p>}
